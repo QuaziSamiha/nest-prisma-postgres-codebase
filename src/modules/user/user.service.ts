@@ -5,29 +5,39 @@ import { UserSecurityRepository } from './user-security.repository';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { ConfigService } from '@nestjs/config';
-
+import { HashUtil } from '../../common/utils/auth/hash.util';
 @Injectable()
 export class UserService {
+  private readonly SALT_ROUNDS = 10;
   constructor(
     private readonly userRepo: UserRepository,
     private readonly profileRepo: ProfileRepository,
     private readonly securityRepo: UserSecurityRepository,
-    private readonly configService: ConfigService, // 2. Inject ConfigService here
+    private readonly configService: ConfigService,
   ) {}
 
   async registerUser(dto: CreateUserDto): Promise<UserResponseDto> {
-    // const { profile, ...userData } = dto;
     const { profile, security, ...userData } = dto;
-    // 1. Check if user exists
+
     const existing = await this.userRepo.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already registered');
 
-    // 2. Execute Transaction
+    // * HASH THE PASSWORD
+    // const hashedPassword: string | undefined = userData.password
+    //   ? await bcrypt.hash(userData.password, this.SALT_ROUNDS)
+    //   : undefined;
+    const hashedPassword = userData.password
+      ? await HashUtil.hash(userData.password)
+      : undefined;
+
+    console.log(hashedPassword);
+
     return await this.userRepo.withTransaction(async (tx) => {
-      // Create User
+      // * Create User
       const user = await this.userRepo.create(
         {
           ...userData,
+          password: hashedPassword,
         },
         tx,
       );
@@ -55,7 +65,6 @@ export class UserService {
 
       const fullUser = await this.userRepo.findByEmail(user.email, tx);
 
-      // 3. Handle the null possibility to satisfy TypeScript
       if (!fullUser) {
         throw new ConflictException(
           'Failed to retrieve user after registration',

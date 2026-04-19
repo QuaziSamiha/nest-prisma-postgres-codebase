@@ -16,7 +16,7 @@
     // "baseUrl": "./",
     "paths": {
       "@app/*": ["./src/app/*"],
-      "@lib/*": ["./src/lib/*"],
+      "@lib/*": ["./src/lib/*"]
     },
     "incremental": true,
     "skipLibCheck": true,
