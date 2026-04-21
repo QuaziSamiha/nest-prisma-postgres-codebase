@@ -51,6 +51,13 @@ New-Item -Path "src/modules/user/user.repository.ts"
 New-Item -Path "src/modules/user/dto/create-user.dto.ts"
 ```
 
+### Password Hashing
+
+```bash
+yarn add bcrypt
+yarn add -D @types/bcrypt
+```
+
 ### git user config
 
 ```bash
