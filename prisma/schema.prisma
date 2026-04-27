@@ -12,3 +12,217 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+
+// enum UserRole {
+//   ADMIN
+//   SUPER_ADMIN
+//   MANAGER
+//   MARKETING
+//   SUPPORT
+//   EMPLOYEE
+//   VENDOR
+//   WAREHOUSE
+//   DELIVERY_PARTNER
+//   CUSTOMER
+//   GUEST
+// }
+
+// enum AuthProvider {
+//   EMAIL
+//   GOOGLE
+//   FACEBOOK
+//   APPLE
+// }
+
+// enum UserStatus {
+//   PENDING_VERIFICATION
+//   ACTIVE
+//   INACTIVE
+//   SUSPENDED
+//   BLOCKED
+//   DEACTIVATED
+//   ARCHIVED
+// }
+
+// enum OTPType {
+//   SIGNUP
+//   PASSWORD_RESET
+//   LOGIN_2FA
+//   PHONE_CHANGE
+// }
+
+// enum CategoryStatus {
+//   ACTIVE
+//   INACTIVE
+//   DRAFT
+//   ARCHIVED
+//   HIDDEN
+// }
+
+// model User {
+//   id       Int     @id @default(autoincrement())
+//   sid      String  @unique @default(uuid()) @map("user_sid")
+//   email    String  @unique
+//   password String? // Null for OAuth
+//   phone    String? @db.VarChar(20)
+
+//   // Enums
+//   role         UserRole     @default(CUSTOMER)
+//   status       UserStatus   @default(PENDING_VERIFICATION)
+//   authProvider AuthProvider @default(EMAIL)
+//   providerId   String? // OAuth ID
+
+//   // Relations
+//   profile           Profile?
+//   security          UserSecurity?
+//   sessions          Session[] // Replaces single refreshToken for multi-device support
+//   otps              OTP[]
+//   createdCategories Category[]    @relation("CategoryCreatedBy")
+//   updatedCategories Category[]    @relation("CategoryUpdatedBy")
+
+//   // Timestamps
+//   createdAt   DateTime  @default(now()) @map("created_at")
+//   updatedAt   DateTime  @updatedAt @map("updated_at")
+//   lastLoginAt DateTime? @map("last_login_at")
+
+//   @@index([email, phone])
+//   @@map("users")
+// }
+
+// model Profile {
+//   id          Int       @id @default(autoincrement())
+//   firstName   String    @db.VarChar(100)
+//   lastName    String?   @db.VarChar(100)
+//   name        String?   @db.VarChar(200)
+//   avatarUrl   String? // One source of truth for the image
+//   bio         String?   @db.Text
+//   dateOfBirth DateTime?
+//   gender      String?   @db.VarChar(20)
+
+//   metadata Json? @default("{}")
+
+//   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   userId Int  @unique @map("user_id")
+
+//   @@index([firstName, lastName])
+//   @@map("profiles")
+// }
+
+// model UserSecurity {
+//   id              Int       @id @default(autoincrement())
+//   isEmailVerified Boolean   @default(false)
+//   emailVerifiedAt DateTime?
+
+//   // Multi-step Auth logic
+//   verificationToken        String?
+//   verificationTokenExpires DateTime?
+//   resetToken               String?
+//   resetTokenExpires        DateTime?
+
+//   // Security Logs
+//   loginAttempts Int     @default(0)
+//   lastLoginIp   String?
+//   assignedIp    String? // For internal/vendor restricted access
+
+//   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   userId Int  @unique @map("user_id")
+
+//   @@map("user_security")
+// }
+
+// model Session {
+//   id                    Int      @id @default(autoincrement())
+//   refreshToken          String   @unique @db.Text
+//   refreshTokenExpiresAt DateTime
+//   createdAt             DateTime @default(now())
+//   userAgent             String?
+//   ipAddress             String?
+
+//   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   userId Int
+
+//   @@map("sessions")
+// }
+
+// model OTP {
+//   id        Int      @id @default(autoincrement())
+//   code      String // Hashed code for security
+//   type      OTPType
+//   expiresAt DateTime @map("expires_at")
+//   isUsed    Boolean  @default(false) @map("is_used")
+
+//   // To identify the target
+//   identifier String // * email or phone number
+
+//   userId Int?  @map("user_id") // Optional for guest checkouts
+//   user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   createdAt DateTime @default(now()) @map("created_at")
+
+//   @@index([identifier])
+//   @@map("otps")
+// }
+
+// // =========== CATEGORY MODEL ============
+// model Category {
+//   id     Int            @id @default(autoincrement())
+//   sid    String         @unique @default(uuid())
+//   status CategoryStatus @default(ACTIVE)
+
+//   //* HIERARCHY MANAGEMENT
+//   parentId Int?
+//   parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: NoAction)
+//   children Category[] @relation("CategoryHierarchy")
+//   level    Int        @default(0) //* DEPTH LEVEL FOR RECURSIVE QUERIES
+
+//   //* OPTIMIZED MULTI-PURPOSE IMAGES
+//   thumbnailUrl String? @db.VarChar(512)
+//   bannerUrl    String? @db.VarChar(512)
+//   iconUrl      String? @db.VarChar(512)
+
+//   //* UI & DISCOVERY METADATA
+//   displayOrder Int     @default(0)
+//   isFeatured   Boolean @default(false)
+//   productCount Int     @default(0) //* DENORMALIZED FOR PERFORMANCE
+
+//   //* LOCALIZATION RELATION
+//   translations CategoryTranslation[]
+
+//   //* AUDIT TRAIL & TIMESTAMPS
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   createdBy     Int?
+//   createdByUser User? @relation("CategoryCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+//   updatedBy     Int?
+//   updatedByUser User? @relation("CategoryUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+
+//   @@map("categories")
+// }
+
+// // =========== TRANSLATION MODEL ============
+// model CategoryTranslation {
+//   id         Int      @id @default(autoincrement())
+//   categoryId Int
+//   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+//   //* LANGUAGE CONFIGURATION
+//   languageCode String @db.VarChar(5) //* E.G., 'en', 'th'
+
+//   //* LOCALIZED CONTENT
+//   name        String  @db.VarChar(255)
+//   slug        String  @db.VarChar(255)
+//   description String? @db.Text
+
+//   //* SEO METADATA PER LANGUAGE
+//   metaTitle       String? @db.VarChar(255)
+//   metaDescription String? @db.Text
+
+//   //* CONSTRAINTS & INDEXING
+//   @@unique([categoryId, languageCode]) //* PREVENTS DUPLICATE LANG PER CATEGORY
+//   @@unique([languageCode, slug]) //* SCOPES SLUG UNIQUENESS TO LANGUAGE
+//   @@index([slug]) //* OPTIMIZES SEARCH BY URL SLUG
+//   @@map("category_translations")
+// }
+
